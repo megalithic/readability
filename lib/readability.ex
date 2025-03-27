@@ -8,7 +8,7 @@ defmodule Readability do
   @type html :: binary
 
   # Just pass url
-  %Readability.Summary{title: title, authors: authors, article_html: article} = Readability.summarize(url)
+  %Readability.Summary{title: title, authors: authors, article_html: article, description: description} = Readability.summarize(url)
 
   # Extract title
   Readability.title(html)
@@ -18,6 +18,9 @@ defmodule Readability do
 
   # Extract authors.
   Readability.authors(html)
+
+  # Extract authors.
+  Readability.description(html)
 
   # Extract only text from article
   article = html
@@ -37,6 +40,7 @@ defmodule Readability do
   alias Readability.PublishedAtFinder
   alias Readability.Summary
   alias Readability.TitleFinder
+  alias Readability.DescriptionFinder
 
   @default_options [
     retry_length: 250,
@@ -66,7 +70,7 @@ defmodule Readability do
     replace_xml_version: ~r/<\?xml.*\?>/i,
     normalize: ~r/\s{2,}/,
     video: ~r/\/\/(www\.)?(dailymotion|youtube|youtube-nocookie|player\.vimeo)\.com/i,
-    protect_attrs: ~r/^(?!id|rel|for|summary|title|href|src|alt|srcdoc)/i,
+    protect_attrs: ~r/^(?!id|rel|for|summary|title|href|src|alt|srcdoc|class)/i,
     img_tag_src: ~r/(<img.*src=['"])([^'"]+)(['"][^>]*>)/Ui
   ]
 
@@ -95,13 +99,14 @@ defmodule Readability do
         %Summary{
           title: title(html_tree),
           authors: authors(html_tree),
+          description: description(html_tree),
           published_at: published_at(html_tree),
           article_html: readable_html(article_tree),
           article_text: readable_text(article_tree)
         }
 
       _ ->
-        %Summary{title: nil, authors: nil, article_html: nil, article_text: raw}
+        %Summary{title: nil, authors: nil, article_html: nil, article_text: raw, description: nil}
     end
   end
 
@@ -153,10 +158,28 @@ defmodule Readability do
   def title(raw_html) when is_binary(raw_html) do
     raw_html
     |> Floki.parse_document!()
-    |> title
+    |> title()
   end
 
   def title(html_tree), do: TitleFinder.title(html_tree)
+
+  @doc """
+  Extract description
+
+  ## Example
+
+      iex> description = Readability.description(html_str)
+      "Some description in html"
+
+  """
+  @spec description(binary | html_tree) :: binary
+  def description(raw_html) when is_binary(raw_html) do
+    raw_html
+    |> Floki.parse_document!()
+    |> description()
+  end
+
+  def description(html_tree), do: DescriptionFinder.description(html_tree)
 
   @doc """
   Extract authors.
