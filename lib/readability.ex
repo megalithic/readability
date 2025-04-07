@@ -82,6 +82,17 @@ defmodule Readability do
   @type options :: list
   @type headers :: list[tuple]
 
+  defp track_redirected(request, opts \\ []) do
+    request
+    |> Req.Request.register_options([:track_redirected])
+    |> Req.Request.merge_options(opts)
+    |> Req.Request.prepend_response_steps(track_redirected: &track_redirected_uri/1)
+  end
+
+  defp track_redirected_uri({request, response}) do
+    {request, put_in(response.private[:final_url], request.url)}
+  end
+
   @doc """
   Summarize the primary readable content of a webpage.
   """
@@ -89,8 +100,18 @@ defmodule Readability do
   def summarize(url, opts \\ []) do
     opts = Keyword.merge(opts, page_url: url)
     # httpoison_options = Application.get_env(:readability, :httpoison_options, [])
-    req_options = Application.get_env(:readability, :req_options, [])
-    %{status_code: _, body: raw, headers: headers} = Req.get!(url, req_options)
+    req_options =
+      Application.get_env(:readability, :req_options, [])
+      |> Keyword.put_new(:url, url)
+
+    %{status_code: _, body: raw, headers: headers, private: private} =
+      Req.new()
+      |> track_redirected()
+      |> Req.get!(req_options)
+
+    dbg(private)
+
+    # Req.get!(url, req_options)
     # %{status_code: _, body: raw, headers: headers} = HTTPoison.get!(url, [], httpoison_options)
 
     case is_response_markup(headers) do
