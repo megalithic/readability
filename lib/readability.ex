@@ -88,8 +88,10 @@ defmodule Readability do
   @spec summarize(url, options) :: Summary.t()
   def summarize(url, opts \\ []) do
     opts = Keyword.merge(opts, page_url: url)
-    httpoison_options = Application.get_env(:readability, :httpoison_options, [])
-    %{status_code: _, body: raw, headers: headers} = HTTPoison.get!(url, [], httpoison_options)
+    # httpoison_options = Application.get_env(:readability, :httpoison_options, [])
+    req_options = Application.get_env(:readability, :req_options, [])
+    %{status_code: _, body: raw, headers: headers} = Req.get!(url, req_options)
+    # %{status_code: _, body: raw, headers: headers} = HTTPoison.get!(url, [], httpoison_options)
 
     case is_response_markup(headers) do
       true ->
