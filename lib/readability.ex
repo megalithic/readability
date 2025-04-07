@@ -99,20 +99,24 @@ defmodule Readability do
   @spec summarize(url, options) :: Summary.t()
   def summarize(url, opts \\ []) do
     opts = Keyword.merge(opts, page_url: url)
-    # httpoison_options = Application.get_env(:readability, :httpoison_options, [])
+
     req_options =
       Application.get_env(:readability, :req_options, [])
       |> Keyword.put_new(:url, url)
+      |> Keyword.put_new(:max_redirects, 100)
 
-    %{status_code: _, body: raw, headers: headers, private: private} =
+    %Req.Response{status: _, body: raw, headers: headers, private: %{final_url: final_url}} =
       Req.new()
       |> track_redirected()
       |> Req.get!(req_options)
 
-    dbg(private)
+    url = URI.to_string(final_url)
 
-    # Req.get!(url, req_options)
+    # ----
+    # NOTE: legacy httpoison implementation:
+    # httpoison_options = Application.get_env(:readability, :httpoison_options, [])
     # %{status_code: _, body: raw, headers: headers} = HTTPoison.get!(url, [], httpoison_options)
+    # ----
 
     case is_response_markup(headers) do
       true ->
