@@ -102,11 +102,10 @@ defmodule Readability do
 
     req_options =
       Application.get_env(:readability, :req_options, [])
-      |> Keyword.put_new(:url, url)
       |> Keyword.put_new(:max_redirects, 100)
 
     %Req.Response{status: _, body: raw, headers: headers, private: %{final_url: final_url}} =
-      Req.new()
+      Req.new(url: url)
       |> track_redirected()
       |> Req.get!(req_options)
 
