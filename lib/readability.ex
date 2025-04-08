@@ -155,6 +155,13 @@ defmodule Readability do
       fn {key, _} -> String.downcase(key) == "content-type" end
     )
     |> elem(1)
+    |> then(fn
+      [m] ->
+        m
+
+      m ->
+        m
+    end)
   end
 
   @doc """
@@ -168,9 +175,7 @@ defmodule Readability do
 
   """
   @spec is_response_markup(headers) :: boolean
-  def is_response_markup(headers) do
-    mime(headers) =~ @markup_mimes
-  end
+  def is_response_markup(headers), do: mime(headers) =~ @markup_mimes
 
   @doc """
   Extract title
